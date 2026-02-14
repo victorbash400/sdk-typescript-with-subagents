@@ -16,8 +16,7 @@ export interface TransferToolRuntime {
 export function createTransferToAgentTool(runtime: TransferToolRuntime): Tool {
   return tool({
     name: 'transfer_to_agent',
-    description:
-      'Transfer the conversation to another agent when that agent is better suited to answer the request.',
+    description: 'Transfer the conversation to another agent when that agent is better suited to answer the request.',
     inputSchema: z.object({
       agentName: z.string().describe('The target agent name.'),
     }),

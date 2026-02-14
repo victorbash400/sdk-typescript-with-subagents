@@ -34,6 +34,19 @@ describe('Agent subAgents handoff', () => {
     )
   })
 
+  it('throws when nested sub-agents are configured', () => {
+    const grandchild = new Agent({ name: 'science', model: new MockMessageModel() })
+    const childWithNested = new Agent({
+      name: 'math',
+      model: new MockMessageModel(),
+      subAgents: [grandchild],
+    })
+
+    expect(() => new Agent({ name: 'root', model: new MockMessageModel(), subAgents: [childWithNested] })).toThrow(
+      'Nested sub-agents are not supported'
+    )
+  })
+
   it('transfers from root to child via transfer_to_agent and emits transfer events', async () => {
     const rootModel = new MockMessageModel().addTurn(
       new ToolUseBlock({ name: 'transfer_to_agent', toolUseId: 't1', input: { agentName: 'math' } })
@@ -108,5 +121,22 @@ describe('Agent subAgents handoff', () => {
 
     expect(first.toString()).toContain('child first turn')
     expect(second.toString()).toContain('child second turn')
+  })
+
+  it('honors explicit child invocation entry even when root remembers another active agent', async () => {
+    const rootModel = new MockMessageModel().addTurn(
+      new ToolUseBlock({ name: 'transfer_to_agent', toolUseId: 't1', input: { agentName: 'math' } })
+    )
+    const mathModel = new MockMessageModel().addTurn(new TextBlock('math turn'))
+    const flashcardsModel = new MockMessageModel().addTurn(new TextBlock('flashcards direct turn'))
+
+    const math = new Agent({ name: 'math', model: mathModel })
+    const flashcards = new Agent({ name: 'flashcards', model: flashcardsModel })
+    const root = new Agent({ name: 'root', model: rootModel, subAgents: [math, flashcards] })
+
+    await root.invoke('route to math first')
+    const directChildResult = await flashcards.invoke('go direct to flashcards')
+
+    expect(directChildResult.toString()).toContain('flashcards direct turn')
   })
 })

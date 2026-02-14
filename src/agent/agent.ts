@@ -664,6 +664,10 @@ export class Agent implements AgentData {
   }
 
   private _wireAgentTree(): void {
+    if (this.parentAgent && this.subAgents.length > 0) {
+      throw new Error('Nested sub-agents are not supported. Child agents cannot define subAgents.')
+    }
+
     // Normalize config.parentAgent links
     if (this.parentAgent && !this.parentAgent.subAgents.includes(this)) {
       ;(this.parentAgent.subAgents as Agent[]).push(this)
@@ -671,6 +675,10 @@ export class Agent implements AgentData {
 
     // Ensure child parent pointers are aligned and share root timeline state.
     for (const child of this.subAgents) {
+      if (child.subAgents.length > 0) {
+        throw new Error('Nested sub-agents are not supported. Child agents cannot define subAgents.')
+      }
+
       if (child.parentAgent && child.parentAgent !== this) {
         throw new Error(
           `Agent '${child.name ?? '<unnamed>'}' already has parent '${child.parentAgent.name ?? '<unnamed>'}'`
@@ -711,6 +719,12 @@ export class Agent implements AgentData {
   }
 
   private _resolveInitialActiveAgent(initialAgent: Agent): Agent {
+    // Explicit child invocation should honor the requested entry point.
+    // Resume-from-last-agent behavior is only for root entry calls.
+    if (initialAgent !== this) {
+      return initialAgent
+    }
+
     if (this._activeAgentName) {
       const remembered = this.findAgent(this._activeAgentName)
       if (remembered) {

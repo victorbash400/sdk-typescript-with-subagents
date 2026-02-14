@@ -198,6 +198,7 @@ console.log(result.toString())
 
 Notes:
 - Agent names are required for agents in a sub-agent tree.
+- Nested sub-agents are not supported (one parent level with direct children only).
 - Transfer targets are resolved from children, parent, and peers (configurable with `disallowTransferToParent` and `disallowTransferToPeers`).
 - The conversation timeline is shared across handoffs.
 
